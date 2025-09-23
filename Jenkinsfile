@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'node:18'   // Node.js LTS Docker image
+            args '-u root:root' // run as root for Docker build permissions if needed
+        }
+    }
 
     environment {
         DOCKER_IMAGE = 'medhermi/calc-api'
@@ -20,7 +25,13 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm ci'
+                script {
+                    if (fileExists('package-lock.json')) {
+                        sh 'npm ci'
+                    } else {
+                        sh 'npm install'
+                    }
+                }
             }
         }
 
@@ -37,9 +48,17 @@ pipeline {
             }
         }
 
-        stage('Security Scan') {
+        stage('Security Audit') {
             steps {
-                sh 'npm audit || true'
+                // Fail build on high or critical vulnerabilities
+                sh 'npm audit --audit-level=high'
+            }
+        }
+
+        stage('Check Deprecated Packages') {
+            steps {
+                // Fail build if deprecated packages exist
+                sh 'npx npm-check --skip-unused --error-level 2'
             }
         }
 
@@ -72,6 +91,7 @@ pipeline {
         always {
             echo "Build #${env.BUILD_ID} - ${currentBuild.currentResult}"
             cleanWs()
+            sh 'docker logout || true' // remove Docker credentials after push
         }
         success {
             emailext (
