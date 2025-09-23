@@ -1,0 +1,16 @@
+{
+  "name": "calc-api",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node app.js",
+    "lint": "eslint .",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "eslint": "^8.0.0"
+  }
+}
