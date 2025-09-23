@@ -7,8 +7,8 @@ pipeline {
     }
 
     options {
+        ansiColor('xterm')
         timestamps()
-        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm'])
     }
 
     stages {
