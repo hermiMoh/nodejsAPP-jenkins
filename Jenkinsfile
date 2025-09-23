@@ -3,53 +3,58 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = 'medhermi/calc-api'
-        BUILD_TAGE = '$env.BUILD_ID'
+        CUSTOM_BUILD_TAG = "${env.BUILD_NUMBER}"
     }
 
     options {
         timestamps()
-        ansiColor('xterm')
+        wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm'])
     }
 
     stages {
-        stage('checkout') {
+        stage('Checkout') {
             steps {
                 checkout scm
             }
         }
-        stage('Install Dependencies'){
+
+        stage('Install Dependencies') {
             steps {
-                 sh 'npm ci'
+                sh 'npm ci'
             }
         }
+
         stage('Lint') {
-            steps{
+            steps {
                 sh 'npm run lint'
             }
         }
-        stage('Unit Test'){
-            steps{
+
+        stage('Unit Test') {
+            steps {
                 sh 'npm test'
                 junit 'test-results/**/*.xml'
             }
         }
-        stage('Security Scan'){
-            steps {
-                sh 'npm audit || echo "Audit failed or vulnerabilities found. "'
 
-            }
-        }
-        stage('Build Docker Image'){
+        stage('Security Scan') {
             steps {
-                sh "docker build -t ${DOCKER_IMAGE}:${BUILD_TAG} ."
+                sh 'npm audit || true'
             }
         }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${DOCKER_IMAGE}:${CUSTOM_BUILD_TAG} ."
+            }
+        }
+
         stage('Push to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-repo', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh """
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push ${DOCKER_IMAGE}:${BUILD_TAG}
+                        docker push ${DOCKER_IMAGE}:${CUSTOM_BUILD_TAG}
                     """
                 }
             }
@@ -57,13 +62,14 @@ pipeline {
 
         stage('Deliver to Staging') {
             steps {
-                echo "Simulating deployment of ${DOCKER_IMAGE}:${BUILD_TAG} to staging..."
+                echo "Simulating deployment of ${DOCKER_IMAGE}:${CUSTOM_BUILD_TAG} to staging..."
                 sleep 15
             }
         }
     }
+
     post {
-         always {
+        always {
             echo "Build #${env.BUILD_ID} - ${currentBuild.currentResult}"
             cleanWs()
         }
