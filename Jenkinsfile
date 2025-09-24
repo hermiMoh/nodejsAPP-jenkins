@@ -1,12 +1,7 @@
 pipeline {
     // Use a Node container and bind the host docker socket so we can run docker build/push.
     // If you prefer a different model (dedicated docker agents), change this.
-    agent {
-        docker {
-            image 'node:18' 
-            args '-u root:root -v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
+    agent { label 'docker-node' }
 
     environment {
         DOCKER_IMAGE        = 'medhermi/calc-api'        // change to your repo
